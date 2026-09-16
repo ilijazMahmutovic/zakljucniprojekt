@@ -57,20 +57,6 @@ app.get("/oprema", async (req, res) => {
     res.json(data);
 });
 
-
-app.get("/zgodovina_ticketov", async (req, res) => {
-    const { data, error } = await supabase
-        .from("zgodovina_ticketov")
-        .select("*")
-        .order("id", { ascending: true });
-
-    if (error) {
-        return res.status(500).json({ error: error.message });
-    }
-
-    res.json(data);
-});
-
 app.post("/uporabniki", async (req, res) => {
     console.log("Content-Type received:", req.headers["content-type"]);
     console.log("Body received:", req.body);
@@ -167,39 +153,6 @@ app.delete("/tickets/:id", async (req, res) => {
     }
 
     res.status(200).json(data);
-});
-
-app.post("/zgodovina_ticketov", async (req, res) => {
-    console.log("Content-Type received:", req.headers["content-type"]);
-    console.log("Body received:", req.body);
-
-    const {
-        ticket_id,
-        datum,
-        status,
-        opomba,
-        uporabnik_id
-    } = req.body;
-
-    const {
-        data,
-        error
-    } = await supabase
-        .from("zgodovina_ticketov")
-        .insert({
-            ticket_id,
-            datum,
-            status,
-            opomba,
-            uporabnik_id
-        })
-        .select();
-
-    if (error) {
-        return res.status(500).json({ error: error.message });
-    }
-
-    res.status(201).json(data);
 });
 
 
