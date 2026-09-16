@@ -71,9 +71,60 @@ app.get("/zgodovina_ticketov", async (req, res) => {
     res.json(data);
 });
 
+app.post("/uporabniki", async (req, res) => {
+    console.log("Content-Type received:", req.headers["content-type"]);
+    console.log("Body received:", req.body);
+    const {
+        ime,
+        priimek,
+        opis,
+        email,
+        vloga
+    } = req.body;
+
+    const {
+        data,
+        error
+    } = await supabase
+        .from("uporabniki")
+        .insert ({ime,
+            priimek,
+            opis,
+            email,
+            vloga})
+        .select();
+    if (error) {
+        return res.status(500).json({ error: error.message });
+    }
+    res.status(201).json(data);});
 
 
+app.post("/oprema", async (req, res) => {
+    console.log("Content-Type received:", req.headers["content-type"]);
+    console.log("Body received:", req.body);
+    const {
+        naziv,
+        tip,
+        serijska_stevilka,
+        lokacija,
+        status
+    } = req.body;
 
+    const {
+        data,
+        error
+    } = await supabase
+        .from("oprema")
+        .insert ({naziv,
+            tip,
+            serijska_stevilka,
+            lokacija,
+            status})
+        .select();
+    if (error) {
+        return res.status(500).json({ error: error.message });
+    }
+    res.status(201).json(data);});
 
 app.post("/tickets", async (req, res) => {
     console.log("Content-Type received:", req.headers["content-type"]);
@@ -86,7 +137,8 @@ app.post("/tickets", async (req, res) => {
         status,
         prijavitelj,
         datum,
-        resitev
+        resitev,
+        oprema_id
     } = req.body;
 
     const {
@@ -94,7 +146,7 @@ app.post("/tickets", async (req, res) => {
         error
     } = await supabase
         .from("tickets")
-        .insert ({naslov, opis, lokacija, prioriteta, status, prijavitelj, datum, resitev})
+        .insert ({naslov, opis, lokacija, prioriteta, status, prijavitelj, datum, resitev, oprema_id})
         .select();
     if (error) {
         return res.status(500).json({ error: error.message });
@@ -115,4 +167,49 @@ app.delete("/tickets/:id", async (req, res) => {
     }
 
     res.status(200).json(data);
+});
+
+app.post("/zgodovina_ticketov", async (req, res) => {
+    console.log("Content-Type received:", req.headers["content-type"]);
+    console.log("Body received:", req.body);
+
+    const {
+        ticket_id,
+        datum,
+        status,
+        opomba,
+        uporabnik_id
+    } = req.body;
+
+    const {
+        data,
+        error
+    } = await supabase
+        .from("zgodovina_ticketov")
+        .insert({
+            ticket_id,
+            datum,
+            status,
+            opomba,
+            uporabnik_id
+        })
+        .select();
+
+    if (error) {
+        return res.status(500).json({ error: error.message });
+    }
+
+    res.status(201).json(data);
+});
+
+
+
+
+
+
+
+
+
+app.listen(PORT, () => {
+    console.log(`Streznik dela na portu ${PORT}`);
 });
