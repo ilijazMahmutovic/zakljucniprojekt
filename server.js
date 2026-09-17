@@ -57,13 +57,54 @@ app.get("/oprema", async (req, res) => {
     res.json(data);
 });
 
+app.get("/oprema/:id", async (req, res) => {
+    const { id } = req.params;
+    const { data, error } = await supabase
+        .from("oprema")
+        .select("*")
+        .eq("id", id)
+
+    if (error) {
+        return res.status(500).json({ error: error.message });
+    }
+
+    res.json(data);
+});
+
+app.get("/tickets/:id", async (req, res) => {
+    const { id } = req.params;
+    const { data, error } = await supabase
+        .from("tickets")
+        .select("*")
+        .eq("id", id)
+
+    if (error) {
+        return res.status(500).json({ error: error.message });
+    }
+
+    res.json(data);
+});
+
+app.get("/uporabniki/:id", async (req, res) => {
+    const { id } = req.params;
+    const { data, error } = await supabase
+        .from("uporabniki")
+        .select("*")
+        .eq("id", id)
+
+    if (error) {
+        return res.status(500).json({ error: error.message });
+    }
+
+    res.json(data);
+});
+
 app.post("/uporabniki", async (req, res) => {
     console.log("Content-Type received:", req.headers["content-type"]);
     console.log("Body received:", req.body);
     const {
         ime,
         priimek,
-        opis,
         email,
         vloga
     } = req.body;
@@ -75,7 +116,6 @@ app.post("/uporabniki", async (req, res) => {
         .from("uporabniki")
         .insert ({ime,
             priimek,
-            opis,
             email,
             vloga})
         .select();
@@ -155,13 +195,21 @@ app.delete("/tickets/:id", async (req, res) => {
     res.status(200).json(data);
 });
 
+app.patch("/tickets/:id", async (req, res) => {
+    const { id } = req.params;
 
+    const { data, error } = await supabase
+        .from("tickets")
+        .update(req.body)
+        .eq("id", id)
+        .select();
 
+    if (error) {
+        return res.status(500).json({ error: error.message });
+    }
 
-
-
-
-
+    res.json(data);
+});
 
 app.listen(PORT, () => {
     console.log(`Streznik dela na portu ${PORT}`);
