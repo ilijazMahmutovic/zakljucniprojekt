@@ -179,6 +179,24 @@ app.post("/tickets", async (req, res) => {
 }
     res.status(201).json(data);});
 
+app.post("/login", async (req, res) => {
+    const { email } = req.body;
+
+    const { data, error } = await supabase
+        .from("uporabniki")
+        .select("*")
+        .eq("email", email)
+        .single();
+
+    if (error || !data) {
+        return res.status(401).json({
+            error: "Uporabnik ne obstaja"
+        });
+    }
+
+    res.json(data);
+});
+
 app.delete("/tickets/:id", async (req, res) => {
     const { id } = req.params;
 

@@ -87,11 +87,91 @@ function TicketScreen({ route }: any) {
     );
 }
 
+function LoginScreen({ navigation }: any) {
+    const [email, setEmail] = useState("");
+    const login = async () => {
+        try {
+            const response = await fetch(`${API_URL}/login`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    email: email
+                })
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                console.error("Napaka:", data);
+                return;
+            }
+
+            console.log("Prijava uspešna:", data);
+
+            navigation.navigate("Home");
+        } catch (error) {
+            console.error("Napaka pri prijavi:", error);
+        }
+    };
+
+    return (
+        <View style={styles.container}>
+            <Text style={styles.title}>IT Helpdesk</Text>
+            <Text>Email</Text>
+            <TextInput
+                style={styles.input}
+                value={email}
+                onChangeText={setEmail}
+                placeholder="Vnesi email"
+            />
+            <Button
+                title="Prijava"
+                onPress={login}
+            />
+        </View>
+    );
+}
+
 function CreateTicketScreen({ navigation }: any) {
     const [naslov, setNaslov] = useState("");
     const [opis, setOpis] = useState("");
     const [lokacija, setLokacija] = useState("");
     const [prioriteta, setPrioriteta] = useState("");
+
+    const submitTicket = async () => {
+        try {
+            const response = await fetch(`${API_URL}/tickets`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        naslov: naslov,
+                        opis: opis,
+                        lokacija: lokacija,
+                        prioriteta: prioriteta,
+                        status: "Odprt",
+                        prijavitelj: 1,
+                        datum: new Date().toISOString().split("T")[0],
+                        resitev: null,
+                        oprema_id: null,
+                    }),
+                });
+            const data = await response.json();
+
+            if (!response.ok) {
+                console.error("Napaka:", data);
+                return;
+            }
+
+            console.log("Ticket ustvarjen:", data);
+
+            navigation.navigate("Home");
+        } catch (error) {
+            console.error("Napaka pri pošiljanju:", error);
+        }
+    };
 
     return (
         <View style={styles.container}>
@@ -129,6 +209,12 @@ function CreateTicketScreen({ navigation }: any) {
                 onChangeText={setPrioriteta}
                 placeholder="Nizka / Srednja / Visoka"
             />
+
+            <Button
+                title="Ustvari ticket"
+                onPress={submitTicket}
+            />
+
         </View>
     );
 }
@@ -137,6 +223,11 @@ export default function App() {
     return (
         <NavigationContainer>
             <Stack.Navigator>
+                <Stack.Screen
+                    name="Login"
+                    component={LoginScreen}
+                    options={{ title: "Login" }}
+                />
                 <Stack.Screen
                     name="Home"
                     component={HomeScreen}
