@@ -6,7 +6,8 @@ const API_URL = "http://localhost:2500";
 
 const Stack = createNativeStackNavigator();
 
-function HomeScreen({ navigation }: any) {
+function HomeScreen({ navigation, route }: any) {
+    const user = route.params.user;
     const [tickets, setTickets] = useState<any[]>([]);
 
     useEffect(() => {
@@ -34,7 +35,8 @@ function HomeScreen({ navigation }: any) {
                     key={ticket.id}
                     style={styles.ticket}
                     onPress={() => navigation.navigate("Ticket", {
-                        id: ticket.id
+                        id: ticket.id,
+                        user: user
                     })}
                 >
                     <Text style={styles.ticketTitle}>
@@ -45,12 +47,14 @@ function HomeScreen({ navigation }: any) {
                     <Text>Prioriteta: {ticket.prioriteta}</Text>
                 </Pressable>
             ))}
+            <Text>Prijavljen: {user.ime} {user.priimek}</Text>
+            <Text>Vloga: {user.vloga}</Text>
         </View>
     );
 }
 
-function TicketScreen({ route }: any) {
-    const { id } = route.params;
+function TicketScreen({ navigation, route }: any) {
+    const { id, user } = route.params;
     const [ticket, setTicket] = useState<any>(null);
 
     useEffect(() => {
@@ -83,6 +87,16 @@ function TicketScreen({ route }: any) {
             <Text>Datum: {ticket.datum}</Text>
             <Text>Resitev: {ticket.resitev || "Se ni reseno"}</Text>
             <Text>Oprema ID: {ticket.oprema_id || "Ni dolocenaa"}</Text>
+
+            {user.vloga === "Administrator" && (
+                <Button
+                    title="Uredi ticket"
+                    onPress={() => navigation.navigate("PatchTicket", {
+                        id: ticket.id,
+                        user: user
+                    })}
+                />
+            )}
         </View>
     );
 }
@@ -108,7 +122,9 @@ function LoginScreen({ navigation }: any) {
 
             console.log("Prijava uspešna:", data);
 
-            navigation.navigate("Home");
+            navigation.navigate("Home", {
+                user: data
+            });
         } catch (error) {
             console.error("Napaka pri prijavi:", error);
         }
@@ -219,6 +235,109 @@ function CreateTicketScreen({ navigation }: any) {
     );
 }
 
+function PatchTicketScreen({ navigation, route }: any) {
+    const { id } = route.params;
+    const [naslov, setNaslov] = useState("");
+    const [opis, setOpis] = useState("");
+    const [lokacija, setLokacija] = useState("");
+    const [prioriteta, setPrioriteta] = useState("");
+
+    useEffect(() => {
+        fetch(`${API_URL}/tickets/${id}`)
+            .then(response => response.json())
+            .then(data => {
+                const ticket = data[0];
+
+                setNaslov(ticket.naslov);
+                setOpis(ticket.opis);
+                setLokacija(ticket.lokacija);
+                setPrioriteta(ticket.prioriteta);
+            })
+            .catch(error => {
+                console.error("Napaka:", error);
+            });
+    }, [id]);
+    const submitTicket = async () => {
+        try {
+            const response = await fetch(`${API_URL}/tickets/${id}`,
+                {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        naslov: naslov,
+                        opis: opis,
+                        lokacija: lokacija,
+                        prioriteta: prioriteta,
+                        status: "Odprt",
+                        prijavitelj: 1,
+                        datum: new Date().toISOString().split("T")[0],
+                        resitev: null,
+                        oprema_id: null,
+                    }),
+                });
+            const data = await response.json();
+
+            if (!response.ok) {
+                console.error("Napaka:", data);
+                return;
+            }
+
+            console.log("Ticket ustvarjen:", data);
+
+            navigation.navigate("Home");
+        } catch (error) {
+            console.error("Napaka pri pošiljanju:", error);
+        }
+    };
+
+    return (
+        <View style={styles.container}>
+            <Text style={styles.title}>Nov ticket</Text>
+
+            <Text>Naslov</Text>
+            <TextInput
+                style={styles.input}
+                value={naslov}
+                onChangeText={setNaslov}
+                placeholder="Vnesi naslov"
+            />
+
+            <Text>Opis</Text>
+            <TextInput
+                style={styles.input}
+                value={opis}
+                onChangeText={setOpis}
+                placeholder="Opiši problem"
+                multiline
+            />
+
+            <Text>Lokacija</Text>
+            <TextInput
+                style={styles.input}
+                value={lokacija}
+                onChangeText={setLokacija}
+                placeholder="Vnesi lokacijo"
+            />
+
+            <Text>Prioriteta</Text>
+            <TextInput
+                style={styles.input}
+                value={prioriteta}
+                onChangeText={setPrioriteta}
+                placeholder="Nizka / Srednja / Visoka"
+            />
+
+            <Button
+                title="Ustvari spremembo"
+                onPress={submitTicket}
+            />
+
+        </View>
+    );
+}
+
 export default function App() {
     return (
         <NavigationContainer>
@@ -243,6 +362,11 @@ export default function App() {
                     name="CreateTicket"
                     component={CreateTicketScreen}
                     options={{ title: "Nov ticket" }}
+                />
+                <Stack.Screen
+                    name="PatchTicket"
+                    component={PatchTicketScreen}
+                    options={{ title: "Spremeni ticket" }}
                 />
             </Stack.Navigator>
         </NavigationContainer>
