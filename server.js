@@ -213,6 +213,23 @@ app.delete("/tickets/:id", async (req, res) => {
     res.status(200).json(data);
 });
 
+app.delete("/oprema/:id", async (req, res) => {
+    const { id } = req.params;
+
+    const { data, error } = await supabase
+        .from("oprema")
+        .delete()
+        .eq("id", id)
+        .select();
+
+    if (error) {
+        return res.status(500).json({ error: error.message });
+    }
+
+    res.status(200).json(data);
+});
+
+
 app.patch("/tickets/:id", async (req, res) => {
     const { id } = req.params;
 
@@ -228,6 +245,23 @@ app.patch("/tickets/:id", async (req, res) => {
 
     res.json(data);
 });
+
+app.patch("/oprema/:id", async (req, res) => {
+    const { id } = req.params;
+
+    const { data, error } = await supabase
+        .from("oprema")
+        .update(req.body)
+        .eq("id", id)
+        .select();
+
+    if (error) {
+        return res.status(500).json({ error: error.message });
+    }
+
+    res.json(data);
+});
+
 
 app.listen(PORT, () => {
     console.log(`Streznik dela na portu ${PORT}`);

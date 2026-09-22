@@ -53,9 +53,106 @@ function HomeScreen({ navigation, route }: any) {
                         <Text>Prioriteta: {ticket.prioriteta}</Text>
                     </Pressable>
                 ))}
+            {user.vloga === "Administrator" && (
+                <Button
+                    title="Oprema"
+                    onPress={() => navigation.navigate("Oprema", { user: user })}
+                />
+            )}
+            <Text>Prijavljen: {user.ime} {user.priimek}</Text>
+            <Text>Vloga: {user.vloga}</Text>
         </View>
     );
 }
+
+function OpremaScreen({ navigation, route }: any) {
+    const user = route.params.user;
+    const [oprema, setOprema] = useState<any[]>([]);
+
+    useEffect(() => {
+        fetch(`${API_URL}/oprema`)
+            .then(response => response.json())
+            .then(data => {
+                setOprema(data);
+            })
+            .catch(error => {
+                console.error("Napaka:", error);
+            });
+    }, []);
+
+    return (
+        <View style={styles.container}>
+            {oprema.map(oprema => (
+                <View style={styles.opremaItem}>
+                    <Pressable
+                        style={styles.opremaInfo}
+                        onPress={() => navigation.navigate("Oprema", {
+                            id: oprema.id,
+                            user: user
+                        })}
+                    >
+                        <Text style={styles.opremaTitle}>
+                            {oprema.naziv}
+                        </Text>
+
+                        <Text>Tip: {oprema.tip}</Text>
+                        <Text>Serijska st.: {oprema.serijska_stevilka}</Text>
+                        <Text>Lokacija: {oprema.lokacija}</Text>
+                        <Text>Status: {oprema.status}</Text>
+                    </Pressable>
+
+                    <View style={styles.opremaButtons}>
+                        <Pressable
+                            style={styles.opremaButton}
+                            onPress={() => navigation.navigate("PatchOprema", {
+                                id: oprema.id,
+                                user: user
+                            })}
+                        >
+                            <Text>Uredi</Text>
+                        </Pressable>
+
+                        <Pressable
+                            style={styles.opremaButton}
+                            onPress={async () => {
+                            try {
+                                const response = await fetch(
+                                    `${API_URL}/oprema/${oprema.id}`,
+                                    {
+                                        method: "DELETE"
+                                    }
+                                );
+
+                                console.log("Status:", response.status);
+
+                                const data = await response.json();
+
+                                if (!response.ok) {
+                                    console.error("Napaka:", data);
+                                    return;
+                                }
+
+                                console.log("Oprema izbrisana:", data);
+
+                                navigation.navigate("Home", {
+                                    user: user
+                                });
+
+                            } catch (error) {
+                                console.error("Napaka pri brisanju:", error);
+                            }
+                        }}
+                            >
+                        <Text>Izbrisi</Text>
+                    </Pressable>
+                    </View>
+                </View>
+            ))}
+        </View>
+    );
+}
+
+
 
 function TicketScreen({ navigation, route }: any) {
     const { id, user } = route.params;
@@ -390,6 +487,113 @@ function PatchTicketScreen({ navigation, route }: any) {
     );
 }
 
+
+function PatchOpremaScreen({ navigation, route }: any) {
+    const { id, user } = route.params;
+    const [naziv, setNaziv] = useState("");
+    const [tip, setTip] = useState("");
+    const [serijska_stevilka, setserijska] = useState("");
+    const [lokacija, setLokacija] = useState("");
+    const [status, setStatus] = useState("");
+
+    useEffect(() => {
+        fetch(`${API_URL}/oprema/${id}`)
+            .then(response => response.json())
+            .then(data => {
+                const oprema = data[0];
+
+                setNaziv(oprema.naziv);
+                setTip(oprema.tip);
+                setserijska(oprema.serijska_stevilka);
+                setLokacija(oprema.lokacija);
+                setStatus(oprema.status);
+            })
+            .catch(error => {
+                console.error("Napaka:", error);
+            });
+    }, [id]);
+    const submitOprema = async () => {
+        try {
+            const response = await fetch(`${API_URL}/oprema/${id}`,
+                {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        naziv: naziv,
+                        tip: tip,
+                        serijska_stevilka: serijska_stevilka,
+                        lokacija: lokacija,
+                        status: status
+                    }),
+                });
+            const data = await response.json();
+
+            if (!response.ok) {
+                console.error("Napaka:", data);
+                return;
+            }
+
+            console.log("Oprema spremenjena:", data);
+
+            navigation.navigate("Home", {user:user});
+        } catch (error) {
+            console.error("Napaka pri pošiljanju:", error);
+        }
+    };
+
+    return (
+        <View style={styles.container}>
+            <Text style={styles.title}>Nov ticket</Text>
+
+            <Text>Naziv</Text>
+            <TextInput
+                style={styles.input}
+                value={naziv}
+                onChangeText={setNaziv}
+                placeholder="Vnesi naziv"
+            />
+
+            <Text>Tip</Text>
+            <TextInput
+                style={styles.input}
+                value={tip}
+                onChangeText={setTip}
+                placeholder="Tip opreme"
+                multiline
+            />
+
+
+            <Text>Serijska stevilka</Text>
+            <TextInput
+                style={styles.input}
+                value={serijska_stevilka}
+                onChangeText={setserijska}
+                placeholder="Vnesi serijsko stevilko"
+            />
+
+            <Text>Lokacija</Text>
+            <TextInput
+                style={styles.input}
+                value={lokacija}
+                onChangeText={setLokacija}
+                placeholder="Vnesi lokacijo"
+            />
+
+
+
+            <Button
+                title="Ustvari spremembo"
+                onPress={submitOprema}
+            />
+
+        </View>
+    );
+}
+
+
+
 export default function App() {
     return (
         <NavigationContainer>
@@ -411,6 +615,11 @@ export default function App() {
                     options={{ title: "Ticket" }}
                 />
                 <Stack.Screen
+                    name="Oprema"
+                    component={OpremaScreen}
+                    options={{ title: "Oprema" }}
+                />
+                <Stack.Screen
                     name="CreateTicket"
                     component={CreateTicketScreen}
                     options={{ title: "Nov ticket" }}
@@ -419,6 +628,11 @@ export default function App() {
                     name="PatchTicket"
                     component={PatchTicketScreen}
                     options={{ title: "Spremeni ticket" }}
+                />
+                <Stack.Screen
+                    name="PatchOprema"
+                    component={PatchOpremaScreen}
+                    options={{ title: "Spremeni opremo" }}
                 />
             </Stack.Navigator>
         </NavigationContainer>
@@ -463,5 +677,37 @@ const styles = StyleSheet.create({
         backgroundColor: "transparent",
         borderWidth: 0,
         borderColor: "transparent"
-    }
+    },
+    opremaItem: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: 15,
+        marginBottom: 10,
+        backgroundColor: "#eee",
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: "black",
+    },
+
+    opremaInfo: {
+        flex: 1,
+    },
+
+    opremaTitle: {
+        fontSize: 18,
+        fontWeight: "bold",
+    },
+
+    opremaButtons: {
+        marginLeft: 15,
+        gap: 8,
+    },
+
+    opremaButton: {
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        backgroundColor: "#ddd",
+        borderRadius: 5,
+    },
 });
