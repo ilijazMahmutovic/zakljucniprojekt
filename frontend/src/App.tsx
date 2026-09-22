@@ -28,28 +28,31 @@ function HomeScreen({ navigation, route }: any) {
 
             <Button
                 title="Nov ticket"
-                onPress={() => navigation.navigate("CreateTicket")}
+                onPress={() => navigation.navigate("CreateTicket", {user:user})}
             />
 
-            {tickets.map(ticket => (
-                <Pressable
-                    key={ticket.id}
-                    style={styles.ticket}
-                    onPress={() => navigation.navigate("Ticket", {
-                        id: ticket.id,
-                        user: user
-                    })}
-                >
-                    <Text style={styles.ticketTitle}>
-                        {ticket.naslov}
-                    </Text>
+            {tickets
+                .filter(ticket =>
+                    user.vloga === "Administrator" ||
+                    ticket.prijavitelj === `${user.ime} ${user.priimek}`
+                )
+                .map(ticket => (
+                    <Pressable
+                        key={ticket.id}
+                        style={styles.ticket}
+                        onPress={() => navigation.navigate("Ticket", {
+                            id: ticket.id,
+                            user: user
+                        })}
+                    >
+                        <Text style={styles.ticketTitle}>
+                            {ticket.naslov}
+                        </Text>
 
-                    <Text>Status: {ticket.status}</Text>
-                    <Text>Prioriteta: {ticket.prioriteta}</Text>
-                </Pressable>
-            ))}
-            <Text>Prijavljen: {user.ime} {user.priimek}</Text>
-            <Text>Vloga: {user.vloga}</Text>
+                        <Text>Status: {ticket.status}</Text>
+                        <Text>Prioriteta: {ticket.prioriteta}</Text>
+                    </Pressable>
+                ))}
         </View>
     );
 }
@@ -90,13 +93,46 @@ function TicketScreen({ navigation, route }: any) {
             <Text>Oprema ID: {ticket.oprema_id || "Ni dolocenaa"}</Text>
 
             {user.vloga === "Administrator" && (
-                <Button
-                    title="Uredi ticket"
-                    onPress={() => navigation.navigate("PatchTicket", {
-                        id: ticket.id,
-                        user: user
-                    })}
-                />
+                <>
+                    <Button
+                        title="Uredi ticket"
+                        onPress={() => navigation.navigate("PatchTicket", {
+                            id: ticket.id,
+                            user: user
+                        })}
+                    />
+
+                    <Button
+                        title="Izbriši ticket"
+                        color="red"
+                        onPress={async () => {
+                            try {
+                                const response = await fetch(
+                                    `${API_URL}/tickets/${ticket.id}`,
+                                    {
+                                        method: "DELETE"
+                                    }
+                                );
+
+                                const data = await response.json();
+
+                                if (!response.ok) {
+                                    console.error("Napaka:", data);
+                                    return;
+                                }
+
+                                console.log("Ticket izbrisan:", data);
+
+                                navigation.navigate("Home", {
+                                    user: user
+                                });
+
+                            } catch (error) {
+                                console.error("Napaka pri brisanju:", error);
+                            }
+                        }}
+                    />
+                </>
             )}
         </View>
     );
@@ -149,7 +185,8 @@ function LoginScreen({ navigation }: any) {
     );
 }
 
-function CreateTicketScreen({ navigation }: any) {
+function CreateTicketScreen({ navigation, route }: any) {
+    const {user} = route.params;
     const [naslov, setNaslov] = useState("");
     const [opis, setOpis] = useState("");
     const [lokacija, setLokacija] = useState("");
@@ -169,7 +206,7 @@ function CreateTicketScreen({ navigation }: any) {
                         lokacija: lokacija,
                         prioriteta: prioriteta,
                         status: "Odprt",
-                        prijavitelj: 1,
+                        prijavitelj: `${user.ime} ${user.priimek}`,
                         datum: new Date().toISOString().split("T")[0],
                         resitev: null,
                         oprema_id: null,
@@ -184,7 +221,9 @@ function CreateTicketScreen({ navigation }: any) {
 
             console.log("Ticket ustvarjen:", data);
 
-            navigation.navigate("Home");
+            navigation.navigate("Home", {
+                user:user
+            });
         } catch (error) {
             console.error("Napaka pri pošiljanju:", error);
         }
@@ -220,12 +259,18 @@ function CreateTicketScreen({ navigation }: any) {
             />
 
             <Text>Prioriteta</Text>
-            <TextInput
-                style={styles.input}
-                value={prioriteta}
-                onChangeText={setPrioriteta}
-                placeholder="Nizka / Srednja / Visoka"
-            />
+            <View style={styles.pickerContainer}>
+                <Picker
+                    style={styles.picker}
+                    selectedValue={prioriteta}
+                    onValueChange={(itemValue) => setPrioriteta(itemValue)}
+                >
+                    <Picker.Item label="Izberi prioriteto" value="" />
+                    <Picker.Item label="Nizka" value="Nizka" />
+                    <Picker.Item label="Srednja" value="Srednja" />
+                    <Picker.Item label="Visoka" value="Visoka" />
+                </Picker>
+            </View>
 
             <Button
                 title="Ustvari ticket"
@@ -237,7 +282,7 @@ function CreateTicketScreen({ navigation }: any) {
 }
 
 function PatchTicketScreen({ navigation, route }: any) {
-    const { id } = route.params;
+    const { id, user } = route.params;
     const [naslov, setNaslov] = useState("");
     const [opis, setOpis] = useState("");
     const [lokacija, setLokacija] = useState("");
@@ -272,7 +317,7 @@ function PatchTicketScreen({ navigation, route }: any) {
                         lokacija: lokacija,
                         prioriteta: prioriteta,
                         status: "Odprt",
-                        prijavitelj: 1,
+                        prijavitelj: user.id,
                         datum: new Date().toISOString().split("T")[0],
                         resitev: null,
                         oprema_id: null,
@@ -287,7 +332,7 @@ function PatchTicketScreen({ navigation, route }: any) {
 
             console.log("Ticket ustvarjen:", data);
 
-            navigation.navigate("Home");
+            navigation.navigate("Home", {user:user});
         } catch (error) {
             console.error("Napaka pri pošiljanju:", error);
         }
@@ -323,12 +368,18 @@ function PatchTicketScreen({ navigation, route }: any) {
             />
 
             <Text>Prioriteta</Text>
-            <TextInput
-                style={styles.input}
-                value={prioriteta}
-                onChangeText={setPrioriteta}
-                placeholder="Nizka / Srednja / Visoka"
-            />
+            <View style={styles.pickerContainer}>
+                <Picker
+                    style={styles.picker}
+                    selectedValue={prioriteta}
+                    onValueChange={(itemValue) => setPrioriteta(itemValue)}
+                >
+                    <Picker.Item label="Izberi prioriteto" value="" />
+                    <Picker.Item label="Nizka" value="Nizka" />
+                    <Picker.Item label="Srednja" value="Srednja" />
+                    <Picker.Item label="Visoka" value="Visoka" />
+                </Picker>
+            </View>
 
             <Button
                 title="Ustvari spremembo"
@@ -400,5 +451,17 @@ const styles = StyleSheet.create({
         padding: 10,
         marginTop: 5,
         marginBottom: 15,
+    },
+    pickerContainer: {
+        borderWidth: 1,
+        borderRadius: 8,
+        padding: 10,
+        marginTop: 5,
+        marginBottom: 15,
+    },
+    picker: {
+        backgroundColor: "transparent",
+        borderWidth: 0,
+        borderColor: "transparent"
     }
 });
