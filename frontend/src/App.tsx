@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Text, View, StyleSheet, Pressable, Button, TextInput } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { Picker } from "@react-native-picker/picker";
 const API_URL = "http://localhost:2500";
 
 const Stack = createNativeStackNavigator();
