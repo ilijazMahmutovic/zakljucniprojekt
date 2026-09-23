@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Text, View, StyleSheet, Pressable, Button, TextInput } from "react-native";
+import { Text, View, StyleSheet, Pressable, TextInput, ScrollView } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Picker } from "@react-native-picker/picker";
@@ -23,13 +23,33 @@ function HomeScreen({ navigation, route }: any) {
     }, []);
 
     return (
-        <View style={styles.container}>
+        <ScrollView style={styles.container} contentContainerStyle={styles.containerContent}>
             <Text style={styles.title}>IT Helpdesk</Text>
 
-            <Button
-                title="Nov ticket"
-                onPress={() => navigation.navigate("CreateTicket", {user:user})}
-            />
+            <View style={styles.headerRow}>
+                <Text style={styles.welcomeText}>Živjo, {user.ime} {user.priimek}</Text>
+                <Text style={styles.subtleText}>Vloga: {user.vloga}</Text>
+            </View>
+
+            <View style={styles.actionsRow}>
+                <Pressable
+                    style={({ pressed }) => [styles.btn, pressed && { opacity: 0.8 }]}
+                    onPress={() => navigation.navigate("CreateTicket", {user:user})}
+                >
+                    <Text style={styles.btnText}>+ Nov ticket</Text>
+                </Pressable>
+
+                {user.vloga === "Administrator" && (
+                    <Pressable
+                        style={({ pressed }) => [styles.btnGhost, pressed && { opacity: 0.8 }]}
+                        onPress={() => navigation.navigate("Oprema", { user: user })}
+                    >
+                        <Text style={styles.btnGhostText}>Oprema</Text>
+                    </Pressable>
+                )}
+            </View>
+
+            <Text style={styles.sectionLabel}>Ticketi</Text>
 
             {tickets
                 .filter(ticket =>
@@ -39,29 +59,30 @@ function HomeScreen({ navigation, route }: any) {
                 .map(ticket => (
                     <Pressable
                         key={ticket.id}
-                        style={styles.ticket}
+                        style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
                         onPress={() => navigation.navigate("Ticket", {
                             id: ticket.id,
                             user: user
                         })}
                     >
-                        <Text style={styles.ticketTitle}>
+                        <Text style={styles.cardTitle}>
                             {ticket.naslov}
                         </Text>
-
-                        <Text>Status: {ticket.status}</Text>
-                        <Text>Prioriteta: {ticket.prioriteta}</Text>
+                        <View style={styles.badgeRow}>
+                            <View style={[styles.badge, statusBadgeStyle(ticket.status)]}>
+                                <Text style={[styles.badgeText, statusTextStyle(ticket.status)]}>{ticket.status}</Text>
+                            </View>
+                            <View style={[styles.badge, priorityBadgeStyle(ticket.prioriteta)]}>
+                                <Text style={[styles.badgeText, priorityTextStyle(ticket.prioriteta)]}>{ticket.prioriteta}</Text>
+                            </View>
+                        </View>
                     </Pressable>
                 ))}
-            {user.vloga === "Administrator" && (
-                <Button
-                    title="Oprema"
-                    onPress={() => navigation.navigate("Oprema", { user: user })}
-                />
+
+            {tickets.length === 0 && (
+                <Text style={styles.emptyText}>Trenutno ni ticketov.</Text>
             )}
-            <Text>Prijavljen: {user.ime} {user.priimek}</Text>
-            <Text>Vloga: {user.vloga}</Text>
-        </View>
+        </ScrollView>
     );
 }
 
@@ -81,9 +102,20 @@ function OpremaScreen({ navigation, route }: any) {
     }, []);
 
     return (
-        <View style={styles.container}>
+        <ScrollView style={styles.container} contentContainerStyle={styles.containerContent}>
+            <Text style={styles.title}>Oprema</Text>
+
+            <View style={styles.actionsRow}>
+                <Pressable
+                    style={({ pressed }) => [styles.btn, pressed && { opacity: 0.8 }]}
+                    onPress={() => navigation.navigate("createOprema", {user:user})}
+                >
+                    <Text style={styles.btnText}>+ Nova oprema</Text>
+                </Pressable>
+            </View>
+
             {oprema.map(oprema => (
-                <View style={styles.opremaItem}>
+                <View key={oprema.id} style={styles.card}>
                     <Pressable
                         style={styles.opremaInfo}
                         onPress={() => navigation.navigate("Oprema", {
@@ -91,73 +123,77 @@ function OpremaScreen({ navigation, route }: any) {
                             user: user
                         })}
                     >
-                        <Text style={styles.opremaTitle}>
+                        <Text style={styles.cardTitle}>
                             {oprema.naziv}
                         </Text>
 
-                        <Text>Tip: {oprema.tip}</Text>
-                        <Text>Serijska st.: {oprema.serijska_stevilka}</Text>
-                        <Text>Lokacija: {oprema.lokacija}</Text>
-                        <Text>Status: {oprema.status}</Text>
+                        <Text style={styles.metaText}>Tip: {oprema.tip}</Text>
+                        <Text style={styles.metaText}>Serijska st.: {oprema.serijska_stevilka}</Text>
+                        <Text style={styles.metaText}>Lokacija: {oprema.lokacija}</Text>
+                        <View style={styles.badgeRow}>
+                            <View style={[styles.badge, statusBadgeStyle(oprema.status)]}>
+                                <Text style={[styles.badgeText, statusTextStyle(oprema.status)]}>{oprema.status}</Text>
+                            </View>
+                        </View>
                     </Pressable>
 
                     <View style={styles.opremaButtons}>
                         <Pressable
-                            style={styles.opremaButton}
+                            style={styles.iconButton}
                             onPress={() => navigation.navigate("PatchOprema", {
                                 id: oprema.id,
                                 user: user
                             })}
                         >
-                            <Text>Uredi</Text>
+                            <Text style={styles.iconButtonText}>Uredi</Text>
                         </Pressable>
 
                         <Pressable
-                            style={styles.opremaButton}
+                            style={[styles.iconButton, styles.iconButtonDanger]}
                             onPress={async () => {
-                            try {
-                                const response = await fetch(
-                                    `${API_URL}/oprema/${oprema.id}`,
-                                    {
-                                        method: "DELETE"
+                                try {
+                                    const response = await fetch(
+                                        `${API_URL}/oprema/${oprema.id}`,
+                                        {
+                                            method: "DELETE"
+                                        }
+                                    );
+
+                                    console.log("Status:", response.status);
+
+                                    const data = await response.json();
+
+                                    if (!response.ok) {
+                                        console.error("Napaka:", data);
+                                        return;
                                     }
-                                );
 
-                                console.log("Status:", response.status);
+                                    console.log("Oprema izbrisana:", data);
 
-                                const data = await response.json();
+                                    navigation.navigate("Home", {
+                                        user: user
+                                    });
 
-                                if (!response.ok) {
-                                    console.error("Napaka:", data);
-                                    return;
+                                } catch (error) {
+                                    console.error("Napaka pri brisanju:", error);
                                 }
-
-                                console.log("Oprema izbrisana:", data);
-
-                                navigation.navigate("Home", {
-                                    user: user
-                                });
-
-                            } catch (error) {
-                                console.error("Napaka pri brisanju:", error);
-                            }
-                        }}
-                            >
-                        <Text>Izbrisi</Text>
-                    </Pressable>
+                            }}
+                        >
+                            <Text style={styles.iconButtonDangerText}>Izbrisi</Text>
+                        </Pressable>
                     </View>
                 </View>
             ))}
-        </View>
+
+            {oprema.length === 0 && (
+                <Text style={styles.emptyText}>Ni evidentirane opreme.</Text>
+            )}
+        </ScrollView>
     );
 }
-
-
-
 function TicketScreen({ navigation, route }: any) {
     const { id, user } = route.params;
     const [ticket, setTicket] = useState<any>(null);
-
     useEffect(() => {
         fetch(`${API_URL}/tickets/${id}`)
             .then(response => response.json())
@@ -168,40 +204,67 @@ function TicketScreen({ navigation, route }: any) {
                 console.error("Napaka:", error);
             });
     }, [id]);
-
     if (!ticket) {
         return (
             <View style={styles.container}>
-                <Text>Nalaganje...</Text>
+                <Text style={styles.emptyText}>Nalaganje...</Text>
             </View>
         );
     }
-
     return (
-        <View style={styles.container}>
+        <ScrollView style={styles.container} contentContainerStyle={styles.containerContent}>
             <Text style={styles.title}>{ticket.naslov}</Text>
-            <Text>Opis: {ticket.opis}</Text>
-            <Text>Status: {ticket.status}</Text>
-            <Text>Prioriteta: {ticket.prioriteta}</Text>
-            <Text>Lokacija: {ticket.lokacija}</Text>
-            <Text>Prijavitelj: {ticket.prijavitelj}</Text>
-            <Text>Datum: {ticket.datum}</Text>
-            <Text>Resitev: {ticket.resitev || "Se ni reseno"}</Text>
-            <Text>Oprema ID: {ticket.oprema_id || "Ni dolocenaa"}</Text>
+
+            <View style={styles.detailCard}>
+                <View style={styles.badgeRow}>
+                    <View style={[styles.badge, statusBadgeStyle(ticket.status)]}>
+                        <Text style={[styles.badgeText, statusTextStyle(ticket.status)]}>{ticket.status}</Text>
+                    </View>
+                    <View style={[styles.badge, priorityBadgeStyle(ticket.prioriteta)]}>
+                        <Text style={[styles.badgeText, priorityTextStyle(ticket.prioriteta)]}>{ticket.prioriteta}</Text>
+                    </View>
+                </View>
+
+                <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Opis</Text>
+                    <Text style={styles.detailValue}>{ticket.opis}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Lokacija</Text>
+                    <Text style={styles.detailValue}>{ticket.lokacija}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Prijavitelj</Text>
+                    <Text style={styles.detailValue}>{ticket.prijavitelj}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Datum</Text>
+                    <Text style={styles.detailValue}>{ticket.datum}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Resitev</Text>
+                    <Text style={styles.detailValue}>{ticket.resitev || "Se ni reseno"}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Oprema ID</Text>
+                    <Text style={styles.detailValue}>{ticket.oprema_id || "Ni dolocenaa"}</Text>
+                </View>
+            </View>
 
             {user.vloga === "Administrator" && (
-                <>
-                    <Button
-                        title="Uredi ticket"
+                <View style={styles.actionsRow}>
+                    <Pressable
+                        style={({ pressed }) => [styles.btn, pressed && { opacity: 0.8 }]}
                         onPress={() => navigation.navigate("PatchTicket", {
                             id: ticket.id,
                             user: user
                         })}
-                    />
+                    >
+                        <Text style={styles.btnText}>Uredi ticket</Text>
+                    </Pressable>
 
-                    <Button
-                        title="Izbriši ticket"
-                        color="red"
+                    <Pressable
+                        style={({ pressed }) => [styles.btnDanger, pressed && { opacity: 0.8 }]}
                         onPress={async () => {
                             try {
                                 const response = await fetch(
@@ -228,10 +291,12 @@ function TicketScreen({ navigation, route }: any) {
                                 console.error("Napaka pri brisanju:", error);
                             }
                         }}
-                    />
-                </>
+                    >
+                        <Text style={styles.btnDangerText}>Izbriši ticket</Text>
+                    </Pressable>
+                </View>
             )}
-        </View>
+        </ScrollView>
     );
 }
 
@@ -265,19 +330,28 @@ function LoginScreen({ navigation }: any) {
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>IT Helpdesk</Text>
-            <Text>Email</Text>
-            <TextInput
-                style={styles.input}
-                value={email}
-                onChangeText={setEmail}
-                placeholder="Vnesi email"
-            />
-            <Button
-                title="Prijava"
-                onPress={login}
-            />
+        <View style={styles.loginContainer}>
+            <View style={styles.loginCard}>
+                <Text style={styles.title}>IT Helpdesk</Text>
+                <Text style={styles.subtleText}>Prijavi se s svojim emailom</Text>
+
+                <Text style={styles.label}>Email</Text>
+                <TextInput
+                    style={styles.input}
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="Vnesi email"
+                    placeholderTextColor="#9CA3AF"
+                    autoCapitalize="none"
+                />
+
+                <Pressable
+                    style={({ pressed }) => [styles.btn, pressed && { opacity: 0.8 }]}
+                    onPress={login}
+                >
+                    <Text style={styles.btnText}>Prijava</Text>
+                </Pressable>
+            </View>
         </View>
     );
 }
@@ -327,57 +401,169 @@ function CreateTicketScreen({ navigation, route }: any) {
     };
 
     return (
-        <View style={styles.container}>
+        <ScrollView style={styles.container} contentContainerStyle={styles.containerContent}>
             <Text style={styles.title}>Nov ticket</Text>
 
-            <Text>Naslov</Text>
-            <TextInput
-                style={styles.input}
-                value={naslov}
-                onChangeText={setNaslov}
-                placeholder="Vnesi naslov"
-            />
+            <View style={styles.formCard}>
+                <Text style={styles.label}>Naslov</Text>
+                <TextInput
+                    style={styles.input}
+                    value={naslov}
+                    onChangeText={setNaslov}
+                    placeholder="Vnesi naslov"
+                    placeholderTextColor="#9CA3AF"
+                />
 
-            <Text>Opis</Text>
-            <TextInput
-                style={styles.input}
-                value={opis}
-                onChangeText={setOpis}
-                placeholder="Opiši problem"
-                multiline
-            />
+                <Text style={styles.label}>Opis</Text>
+                <TextInput
+                    style={[styles.input, styles.inputMultiline]}
+                    value={opis}
+                    onChangeText={setOpis}
+                    placeholder="Opiši problem"
+                    placeholderTextColor="#9CA3AF"
+                    multiline
+                />
 
-            <Text>Lokacija</Text>
-            <TextInput
-                style={styles.input}
-                value={lokacija}
-                onChangeText={setLokacija}
-                placeholder="Vnesi lokacijo"
-            />
+                <Text style={styles.label}>Lokacija</Text>
+                <TextInput
+                    style={styles.input}
+                    value={lokacija}
+                    onChangeText={setLokacija}
+                    placeholder="Vnesi lokacijo"
+                    placeholderTextColor="#9CA3AF"
+                />
 
-            <Text>Prioriteta</Text>
-            <View style={styles.pickerContainer}>
-                <Picker
-                    style={styles.picker}
-                    selectedValue={prioriteta}
-                    onValueChange={(itemValue) => setPrioriteta(itemValue)}
+                <Text style={styles.label}>Prioriteta</Text>
+                <View style={styles.pickerContainer}>
+                    <Picker
+                        style={styles.picker}
+                        selectedValue={prioriteta}
+                        onValueChange={(itemValue) => setPrioriteta(itemValue)}
+                    >
+                        <Picker.Item label="Izberi prioriteto" value="" />
+                        <Picker.Item label="Nizka" value="Nizka" />
+                        <Picker.Item label="Srednja" value="Srednja" />
+                        <Picker.Item label="Visoka" value="Visoka" />
+                    </Picker>
+                </View>
+
+                <Pressable
+                    style={({ pressed }) => [styles.btn, pressed && { opacity: 0.8 }]}
+                    onPress={submitTicket}
                 >
-                    <Picker.Item label="Izberi prioriteto" value="" />
-                    <Picker.Item label="Nizka" value="Nizka" />
-                    <Picker.Item label="Srednja" value="Srednja" />
-                    <Picker.Item label="Visoka" value="Visoka" />
-                </Picker>
+                    <Text style={styles.btnText}>Ustvari ticket</Text>
+                </Pressable>
             </View>
-
-            <Button
-                title="Ustvari ticket"
-                onPress={submitTicket}
-            />
-
-        </View>
+        </ScrollView>
     );
 }
 
+function CreateOpremaScreen({ navigation, route }: any) {
+    const { user } = route.params;
+    const [naziv, setNaziv] = useState("");
+    const [tip, setTip] = useState("");
+    const [serijska_stevilka, setserijska] = useState("");
+    const [lokacija, setLokacija] = useState("");
+    const [status, setStatus] = useState("");
+
+    const createOprema = async () => {
+        try {
+            const response = await fetch(`${API_URL}/oprema`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        naziv: naziv,
+                        tip: tip,
+                        serijska_stevilka: serijska_stevilka,
+                        lokacija: lokacija,
+                        status: status
+                    }),
+                });
+            const data = await response.json();
+
+            if (!response.ok) {
+                console.error("Napaka:", data);
+                return;
+            }
+
+            console.log("Oprema ustvarjena:", data);
+
+            navigation.navigate("Home", {
+                user:user
+            });
+        } catch (error) {
+            console.error("Napaka pri pošiljanju:", error);
+        }
+    };
+
+    return (
+        <ScrollView style={styles.container} contentContainerStyle={styles.containerContent}>
+            <Text style={styles.title}>Nova oprema</Text>
+
+            <View style={styles.formCard}>
+                <Text style={styles.label}>Naziv</Text>
+                <TextInput
+                    style={styles.input}
+                    value={naziv}
+                    onChangeText={setNaziv}
+                    placeholder="Vnesi naziv"
+                    placeholderTextColor="#9CA3AF"
+                />
+
+                <Text style={styles.label}>Tip</Text>
+                <TextInput
+                    style={[styles.input, styles.inputMultiline]}
+                    value={tip}
+                    onChangeText={setTip}
+                    placeholder="Tip opreme"
+                    placeholderTextColor="#9CA3AF"
+                    multiline
+                />
+
+                <Text style={styles.label}>Serijska stevilka</Text>
+                <TextInput
+                    style={styles.input}
+                    value={serijska_stevilka}
+                    onChangeText={setserijska}
+                    placeholder="Vnesi serijsko stevilko"
+                    placeholderTextColor="#9CA3AF"
+                />
+
+                <Text style={styles.label}>Lokacija</Text>
+                <TextInput
+                    style={styles.input}
+                    value={lokacija}
+                    onChangeText={setLokacija}
+                    placeholder="Vnesi lokacijo"
+                    placeholderTextColor="#9CA3AF"
+                />
+
+                <Text style={styles.label}>Status</Text>
+                <View style={styles.pickerContainer}>
+                    <Picker
+                        style={styles.picker}
+                        selectedValue={status}
+                        onValueChange={(itemValue) => setStatus(itemValue)}
+                    >
+                        <Picker.Item label="Izberi status" value="" />
+                        <Picker.Item label="Deluje" value="Deluje" />
+                        <Picker.Item label="V opravilu" value="V opravilu" />
+                    </Picker>
+                </View>
+
+                <Pressable
+                    style={({ pressed }) => [styles.btn, pressed && { opacity: 0.8 }]}
+                    onPress={createOprema}
+                >
+                    <Text style={styles.btnText}>Ustvari opremo</Text>
+                </Pressable>
+            </View>
+        </ScrollView>
+    );
+}
 function PatchTicketScreen({ navigation, route }: any) {
     const { id, user } = route.params;
     const [naslov, setNaslov] = useState("");
@@ -436,58 +622,62 @@ function PatchTicketScreen({ navigation, route }: any) {
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Nov ticket</Text>
+        <ScrollView style={styles.container} contentContainerStyle={styles.containerContent}>
+            <Text style={styles.title}>Spremeni ticket</Text>
 
-            <Text>Naslov</Text>
-            <TextInput
-                style={styles.input}
-                value={naslov}
-                onChangeText={setNaslov}
-                placeholder="Vnesi naslov"
-            />
+            <View style={styles.formCard}>
+                <Text style={styles.label}>Naslov</Text>
+                <TextInput
+                    style={styles.input}
+                    value={naslov}
+                    onChangeText={setNaslov}
+                    placeholder="Vnesi naslov"
+                    placeholderTextColor="#9CA3AF"
+                />
 
-            <Text>Opis</Text>
-            <TextInput
-                style={styles.input}
-                value={opis}
-                onChangeText={setOpis}
-                placeholder="Opiši problem"
-                multiline
-            />
+                <Text style={styles.label}>Opis</Text>
+                <TextInput
+                    style={[styles.input, styles.inputMultiline]}
+                    value={opis}
+                    onChangeText={setOpis}
+                    placeholder="Opiši problem"
+                    placeholderTextColor="#9CA3AF"
+                    multiline
+                />
 
-            <Text>Lokacija</Text>
-            <TextInput
-                style={styles.input}
-                value={lokacija}
-                onChangeText={setLokacija}
-                placeholder="Vnesi lokacijo"
-            />
+                <Text style={styles.label}>Lokacija</Text>
+                <TextInput
+                    style={styles.input}
+                    value={lokacija}
+                    onChangeText={setLokacija}
+                    placeholder="Vnesi lokacijo"
+                    placeholderTextColor="#9CA3AF"
+                />
 
-            <Text>Prioriteta</Text>
-            <View style={styles.pickerContainer}>
-                <Picker
-                    style={styles.picker}
-                    selectedValue={prioriteta}
-                    onValueChange={(itemValue) => setPrioriteta(itemValue)}
+                <Text style={styles.label}>Prioriteta</Text>
+                <View style={styles.pickerContainer}>
+                    <Picker
+                        style={styles.picker}
+                        selectedValue={prioriteta}
+                        onValueChange={(itemValue) => setPrioriteta(itemValue)}
+                    >
+                        <Picker.Item label="Izberi prioriteto" value="" />
+                        <Picker.Item label="Nizka" value="Nizka" />
+                        <Picker.Item label="Srednja" value="Srednja" />
+                        <Picker.Item label="Visoka" value="Visoka" />
+                    </Picker>
+                </View>
+
+                <Pressable
+                    style={({ pressed }) => [styles.btn, pressed && { opacity: 0.8 }]}
+                    onPress={submitTicket}
                 >
-                    <Picker.Item label="Izberi prioriteto" value="" />
-                    <Picker.Item label="Nizka" value="Nizka" />
-                    <Picker.Item label="Srednja" value="Srednja" />
-                    <Picker.Item label="Visoka" value="Visoka" />
-                </Picker>
+                    <Text style={styles.btnText}>Ustvari spremembo</Text>
+                </Pressable>
             </View>
-
-            <Button
-                title="Ustvari spremembo"
-                onPress={submitTicket}
-            />
-
-        </View>
+        </ScrollView>
     );
 }
-
-
 function PatchOpremaScreen({ navigation, route }: any) {
     const { id, user } = route.params;
     const [naziv, setNaziv] = useState("");
@@ -544,60 +734,110 @@ function PatchOpremaScreen({ navigation, route }: any) {
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Nov ticket</Text>
+        <ScrollView style={styles.container} contentContainerStyle={styles.containerContent}>
+            <Text style={styles.title}>Spremeni opremo</Text>
 
-            <Text>Naziv</Text>
-            <TextInput
-                style={styles.input}
-                value={naziv}
-                onChangeText={setNaziv}
-                placeholder="Vnesi naziv"
-            />
+            <View style={styles.formCard}>
+                <Text style={styles.label}>Naziv</Text>
+                <TextInput
+                    style={styles.input}
+                    value={naziv}
+                    onChangeText={setNaziv}
+                    placeholder="Vnesi naziv"
+                    placeholderTextColor="#9CA3AF"
+                />
 
-            <Text>Tip</Text>
-            <TextInput
-                style={styles.input}
-                value={tip}
-                onChangeText={setTip}
-                placeholder="Tip opreme"
-                multiline
-            />
+                <Text style={styles.label}>Tip</Text>
+                <TextInput
+                    style={[styles.input, styles.inputMultiline]}
+                    value={tip}
+                    onChangeText={setTip}
+                    placeholder="Tip opreme"
+                    placeholderTextColor="#9CA3AF"
+                    multiline
+                />
 
+                <Text style={styles.label}>Serijska stevilka</Text>
+                <TextInput
+                    style={styles.input}
+                    value={serijska_stevilka}
+                    onChangeText={setserijska}
+                    placeholder="Vnesi serijsko stevilko"
+                    placeholderTextColor="#9CA3AF"
+                />
 
-            <Text>Serijska stevilka</Text>
-            <TextInput
-                style={styles.input}
-                value={serijska_stevilka}
-                onChangeText={setserijska}
-                placeholder="Vnesi serijsko stevilko"
-            />
+                <Text style={styles.label}>Lokacija</Text>
+                <TextInput
+                    style={styles.input}
+                    value={lokacija}
+                    onChangeText={setLokacija}
+                    placeholder="Vnesi lokacijo"
+                    placeholderTextColor="#9CA3AF"
+                />
 
-            <Text>Lokacija</Text>
-            <TextInput
-                style={styles.input}
-                value={lokacija}
-                onChangeText={setLokacija}
-                placeholder="Vnesi lokacijo"
-            />
+                <Text style={styles.label}>Status</Text>
+                <View style={styles.pickerContainer}>
+                    <Picker
+                        style={styles.picker}
+                        selectedValue={status}
+                        onValueChange={(itemValue) => setStatus(itemValue)}
+                    >
+                        <Picker.Item label="Izberi status" value="" />
+                        <Picker.Item label="Deluje" value="Deluje" />
+                        <Picker.Item label="V opravilu" value="V opravilu" />
+                    </Picker>
+                </View>
 
-
-
-            <Button
-                title="Ustvari spremembo"
-                onPress={submitOprema}
-            />
-
-        </View>
+                <Pressable
+                    style={({ pressed }) => [styles.btn, pressed && { opacity: 0.8 }]}
+                    onPress={submitOprema}
+                >
+                    <Text style={styles.btnText}>Ustvari spremembo</Text>
+                </Pressable>
+            </View>
+        </ScrollView>
     );
 }
-
-
+function statusBadgeStyle(status: string) {
+    if (status === "Odprt") return { backgroundColor: "#EEF0FF", borderColor: "#4F5DFF" };
+    if (status === "V obravnavi") return { backgroundColor: "#FEF3E2", borderColor: "#F79009" };
+    if (status === "Zaprt") return { backgroundColor: "#F0F1F5", borderColor: "#6B7280" };
+    if (status === "Deluje") return { backgroundColor: "#E9FBF0", borderColor: "#12B76A" };
+    if (status === "V opravilu") return { backgroundColor: "#FEF3E2", borderColor: "#F79009" };
+    return { backgroundColor: "#F0F1F5", borderColor: "#6B7280" };
+}
+function statusTextStyle(status: string) {
+    if (status === "Odprt") return { color: "#4F5DFF" };
+    if (status === "V obravnavi") return { color: "#F79009" };
+    if (status === "Zaprt") return { color: "#6B7280" };
+    if (status === "Deluje") return { color: "#12B76A" };
+    if (status === "V opravilu") return { color: "#F79009" };
+    return { color: "#6B7280" };
+}
+function priorityBadgeStyle(prioriteta: string) {
+    if (prioriteta === "Nizka") return { backgroundColor: "#E9FBF0", borderColor: "#12B76A" };
+    if (prioriteta === "Srednja") return { backgroundColor: "#FEF3E2", borderColor: "#F79009" };
+    if (prioriteta === "Visoka") return { backgroundColor: "#FDECEC", borderColor: "#E5484D" };
+    return { backgroundColor: "#F0F1F5", borderColor: "#6B7280" };
+}
+function priorityTextStyle(prioriteta: string) {
+    if (prioriteta === "Nizka") return { color: "#12B76A" };
+    if (prioriteta === "Srednja") return { color: "#F79009" };
+    if (prioriteta === "Visoka") return { color: "#E5484D" };
+    return { color: "#6B7280" };
+}
 
 export default function App() {
     return (
         <NavigationContainer>
-            <Stack.Navigator>
+            <Stack.Navigator
+                screenOptions={{
+                    headerStyle: { backgroundColor: "#fff" },
+                    headerTitleStyle: { color: "#1C1E26", fontWeight: "700" },
+                    headerTintColor: "#4F5DFF",
+                    contentStyle: { backgroundColor: "#F5F6FA" },
+                }}
+            >
                 <Stack.Screen
                     name="Login"
                     component={LoginScreen}
@@ -634,6 +874,11 @@ export default function App() {
                     component={PatchOpremaScreen}
                     options={{ title: "Spremeni opremo" }}
                 />
+                <Stack.Screen
+                    name="createOprema"
+                    component={CreateOpremaScreen}
+                    options={{ title: "Nova oprema" }}
+                />
             </Stack.Navigator>
         </NavigationContainer>
     );
@@ -641,73 +886,246 @@ export default function App() {
 
 const styles = StyleSheet.create({
     container: {
+        flex: 1,
+        backgroundColor: "#F5F6FA",
+    },
+    containerContent: {
         padding: 20,
+        paddingBottom: 40,
     },
     title: {
-        fontSize: 24,
-        fontWeight: "bold",
+        fontSize: 26,
+        fontWeight: "800",
+        color: "#1C1E26",
+        marginBottom: 16,
+    },
+    headerRow: {
+        marginBottom: 16,
+    },
+    welcomeText: {
+        fontSize: 16,
+        fontWeight: "700",
+        color: "#1C1E26",
+    },
+    subtleText: {
+        fontSize: 13,
+        color: "#6B7280",
+        marginTop: 2,
+    },
+    actionsRow: {
+        flexDirection: "row",
+        gap: 10,
         marginBottom: 20,
     },
-    ticket: {
-        padding: 15,
+    sectionLabel: {
+        fontSize: 13,
+        fontWeight: "700",
+        color: "#6B7280",
+        textTransform: "uppercase",
+        letterSpacing: 0.5,
         marginBottom: 10,
-        borderWidth: 1,
-        borderRadius: 8,
     },
-    ticketTitle: {
-        fontSize: 18,
-        fontWeight: "bold",
-        marginBottom: 5,
+    emptyText: {
+        color: "#6B7280",
+        fontSize: 14,
+        textAlign: "center",
+        marginTop: 20,
+    },
+    card: {
+        backgroundColor: "#FFFFFF",
+        borderRadius: 14,
+        padding: 16,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: "#E4E6EE",
+        shadowColor: "#000",
+        shadowOpacity: 0.04,
+        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 2 },
+        elevation: 1,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+    },
+    cardPressed: {
+        backgroundColor: "#FAFAFE",
+    },
+    cardTitle: {
+        fontSize: 16,
+        fontWeight: "700",
+        color: "#1C1E26",
+        marginBottom: 8,
+    },
+    metaText: {
+        fontSize: 13,
+        color: "#6B7280",
+        marginBottom: 2,
+    },
+    badgeRow: {
+        flexDirection: "row",
+        gap: 8,
+        marginTop: 6,
+    },
+    badge: {
+        borderWidth: 1,
+        borderRadius: 999,
+        paddingVertical: 3,
+        paddingHorizontal: 10,
+    },
+    badgeText: {
+        fontSize: 12,
+        fontWeight: "700",
+    },
+    detailCard: {
+        backgroundColor: "#FFFFFF",
+        borderRadius: 14,
+        padding: 18,
+        borderWidth: 1,
+        borderColor: "#E4E6EE",
+        marginBottom: 20,
+    },
+    detailRow: {
+        marginTop: 14,
+    },
+    detailLabel: {
+        fontSize: 12,
+        fontWeight: "700",
+        color: "#6B7280",
+        textTransform: "uppercase",
+        letterSpacing: 0.4,
+        marginBottom: 3,
+    },
+    detailValue: {
+        fontSize: 15,
+        color: "#1C1E26",
+    },
+    btn: {
+        backgroundColor: "#4F5DFF",
+        paddingVertical: 12,
+        paddingHorizontal: 18,
+        borderRadius: 10,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    btnText: {
+        color: "#FFFFFF",
+        fontWeight: "700",
+        fontSize: 14,
+    },
+    btnGhost: {
+        backgroundColor: "transparent",
+        borderWidth: 1,
+        borderColor: "#4F5DFF",
+        paddingVertical: 12,
+        paddingHorizontal: 18,
+        borderRadius: 10,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    btnGhostText: {
+        color: "#4F5DFF",
+        fontWeight: "700",
+        fontSize: 14,
+    },
+    btnDanger: {
+        backgroundColor: "#FDECEC",
+        borderWidth: 1,
+        borderColor: "#E5484D",
+        paddingVertical: 12,
+        paddingHorizontal: 18,
+        borderRadius: 10,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    btnDangerText: {
+        color: "#E5484D",
+        fontWeight: "700",
+        fontSize: 14,
+    },
+    formCard: {
+        backgroundColor: "#FFFFFF",
+        borderRadius: 14,
+        padding: 18,
+        borderWidth: 1,
+        borderColor: "#E4E6EE",
+    },
+    label: {
+        fontSize: 13,
+        fontWeight: "700",
+        color: "#1C1E26",
+        marginBottom: 6,
+        marginTop: 4,
     },
     input: {
         borderWidth: 1,
-        borderRadius: 8,
-        padding: 10,
-        marginTop: 5,
-        marginBottom: 15,
+        borderColor: "#E4E6EE",
+        borderRadius: 10,
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        fontSize: 15,
+        color: "#1C1E26",
+        backgroundColor: "#FAFBFF",
+        marginBottom: 10,
+    },
+    inputMultiline: {
+        minHeight: 80,
+        textAlignVertical: "top",
     },
     pickerContainer: {
         borderWidth: 1,
-        borderRadius: 8,
-        padding: 10,
-        marginTop: 5,
-        marginBottom: 15,
+        borderColor: "#E4E6EE",
+        borderRadius: 10,
+        backgroundColor: "#FAFBFF",
+        overflow: "hidden",
+        marginBottom: 16,
     },
     picker: {
         backgroundColor: "transparent",
-        borderWidth: 0,
-        borderColor: "transparent"
-    },
-    opremaItem: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: 15,
-        marginBottom: 10,
-        backgroundColor: "#eee",
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: "black",
     },
 
+    loginContainer: {
+        flex: 1,
+        justifyContent: "center",
+        padding: 24,
+        backgroundColor: "#F5F6FA",
+    },
+    loginCard: {
+        backgroundColor: "#FFFFFF",
+        borderRadius: 16,
+        padding: 24,
+        borderWidth: 1,
+        borderColor: "#E4E6EE",
+        shadowColor: "#000",
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 4 },
+        elevation: 2,
+    },
     opremaInfo: {
         flex: 1,
     },
-
-    opremaTitle: {
-        fontSize: 18,
-        fontWeight: "bold",
-    },
-
     opremaButtons: {
         marginLeft: 15,
         gap: 8,
     },
-
-    opremaButton: {
+    iconButton: {
         paddingVertical: 8,
         paddingHorizontal: 12,
-        backgroundColor: "#ddd",
-        borderRadius: 5,
+        backgroundColor: "#F0F1F8",
+        borderRadius: 8,
+        alignItems: "center",
+    },
+    iconButtonText: {
+        color: "#1C1E26",
+        fontWeight: "600",
+        fontSize: 13,
+    },
+    iconButtonDanger: {
+        backgroundColor: "#FDECEC",
+    },
+    iconButtonDangerText: {
+        color: "#E5484D",
+        fontWeight: "600",
+        fontSize: 13,
     },
 });
