@@ -26,11 +26,6 @@ function HomeScreen({ navigation, route }: any) {
         <ScrollView style={styles.container} contentContainerStyle={styles.containerContent}>
             <Text style={styles.title}>IT Helpdesk</Text>
 
-            <View style={styles.headerRow}>
-                <Text style={styles.welcomeText}>Živjo, {user.ime} {user.priimek}</Text>
-                <Text style={styles.subtleText}>Vloga: {user.vloga}</Text>
-            </View>
-
             <View style={styles.actionsRow}>
                 <Pressable
                     style={({ pressed }) => [styles.btn, pressed && { opacity: 0.8 }]}
@@ -600,7 +595,7 @@ function PatchTicketScreen({ navigation, route }: any) {
                         lokacija: lokacija,
                         prioriteta: prioriteta,
                         status: "Odprt",
-                        prijavitelj: user.id,
+                        prijavitelj: `${user.ime} ${user.priimek}`,
                         datum: new Date().toISOString().split("T")[0],
                         resitev: null,
                         oprema_id: null,
@@ -846,38 +841,213 @@ export default function App() {
                 <Stack.Screen
                     name="Home"
                     component={HomeScreen}
-                    options={{ title: "IT Helpdesk" }}
+                    options={({ route }) => {
+                        // Safely extract the user parameters
+                        const user = (route.params as any)?.user || {};
+                        const firstName = user.ime || '';
+                        const lastName = user.priimek || '';
+                        const vloga=user.vloga || '';
+                        const fullName = `${firstName} ${lastName}`.trim();
+
+                        return {
+                            title: "IT Helpdesk", // Keeps the title on the left (or center on iOS)
+                            headerRight: () => (
+                                <View style={{ paddingRight: 10 }}>
+                                    <Text style={styles.welcomeText}>
+                                        Uporabnik: {fullName}
+                                    </Text>
+                                    <View style={{ paddingRight: 10 }}>
+                                        <Text style={styles.welcomeText}>
+                                            Vloga: {vloga}
+                                        </Text>
+                                    </View>
+                                </View>
+
+
+                            ),
+                        };
+                    }}
                 />
 
                 <Stack.Screen
                     name="Ticket"
                     component={TicketScreen}
-                    options={{ title: "Ticket" }}
+                    options={({ route }) => {
+                        // Safely extract the user parameters
+                        const user = (route.params as any)?.user || {};
+                        const firstName = user.ime || '';
+                        const lastName = user.priimek || '';
+                        const vloga=user.vloga || '';
+                        const fullName = `${firstName} ${lastName}`.trim();
+
+                        return {
+                            title: "Ticket", // Keeps the title on the left (or center on iOS)
+                            headerRight: () => (
+                                <View style={{ paddingRight: 10 }}>
+                                    <Text style={styles.welcomeText}>
+                                        Uporabnik: {fullName}
+                                    </Text>
+                                    <View style={{ paddingRight: 10 }}>
+                                        <Text style={styles.welcomeText}>
+                                            Vloga: {vloga}
+                                        </Text>
+                                    </View>
+                                </View>
+
+
+                            ),
+                        };
+                    }}
                 />
                 <Stack.Screen
                     name="Oprema"
                     component={OpremaScreen}
-                    options={{ title: "Oprema" }}
+                    options={({ route }) => {
+                        // Safely extract the user parameters
+                        const user = (route.params as any)?.user || {};
+                        const firstName = user.ime || '';
+                        const lastName = user.priimek || '';
+                        const vloga=user.vloga || '';
+                        const fullName = `${firstName} ${lastName}`.trim();
+
+                        return {
+                            title: "Oprema", // Keeps the title on the left (or center on iOS)
+                            headerRight: () => (
+                                <View style={{ paddingRight: 10 }}>
+                                    <Text style={styles.welcomeText}>
+                                        Uporabnik: {fullName}
+                                    </Text>
+                                    <View style={{ paddingRight: 10 }}>
+                                        <Text style={styles.welcomeText}>
+                                            Vloga: {vloga}
+                                        </Text>
+                                    </View>
+                                </View>
+
+
+                            ),
+                        };
+                    }}
                 />
                 <Stack.Screen
                     name="CreateTicket"
                     component={CreateTicketScreen}
-                    options={{ title: "Nov ticket" }}
+                    options={({ route }) => {
+                        // Safely extract the user parameters
+                        const user = (route.params as any)?.user || {};
+                        const firstName = user.ime || '';
+                        const lastName = user.priimek || '';
+                        const vloga=user.vloga || '';
+                        const fullName = `${firstName} ${lastName}`.trim();
+
+                        return {
+                            title: "Nov ticket", // Keeps the title on the left (or center on iOS)
+                            headerRight: () => (
+                                <View style={{ paddingRight: 10 }}>
+                                    <Text style={styles.welcomeText}>
+                                        Uporabnik: {fullName}
+                                    </Text>
+                                    <View style={{ paddingRight: 10 }}>
+                                        <Text style={styles.welcomeText}>
+                                            Vloga: {vloga}
+                                        </Text>
+                                    </View>
+                                </View>
+
+
+                            ),
+                        };
+                    }}
                 />
                 <Stack.Screen
                     name="PatchTicket"
                     component={PatchTicketScreen}
-                    options={{ title: "Spremeni ticket" }}
+                    options={({ route }) => {
+                        // Safely extract the user parameters
+                        const user = (route.params as any)?.user || {};
+                        const firstName = user.ime || '';
+                        const lastName = user.priimek || '';
+                        const vloga=user.vloga || '';
+                        const fullName = `${firstName} ${lastName}`.trim();
+
+                        return {
+                            title: "Spremeni ticket", // Keeps the title on the left (or center on iOS)
+                            headerRight: () => (
+                                <View style={{ paddingRight: 10 }}>
+                                    <Text style={styles.welcomeText}>
+                                        Uporabnik: {fullName}
+                                    </Text>
+                                    <View style={{ paddingRight: 10 }}>
+                                        <Text style={styles.welcomeText}>
+                                            Vloga: {vloga}
+                                        </Text>
+                                    </View>
+                                </View>
+
+
+                            ),
+                        };
+                    }}
                 />
                 <Stack.Screen
                     name="PatchOprema"
                     component={PatchOpremaScreen}
-                    options={{ title: "Spremeni opremo" }}
+                    options={({ route }) => {
+                        // Safely extract the user parameters
+                        const user = (route.params as any)?.user || {};
+                        const firstName = user.ime || '';
+                        const lastName = user.priimek || '';
+                        const vloga=user.vloga || '';
+                        const fullName = `${firstName} ${lastName}`.trim();
+
+                        return {
+                            title: "Spremeni opremo", // Keeps the title on the left (or center on iOS)
+                            headerRight: () => (
+                                <View style={{ paddingRight: 10 }}>
+                                    <Text style={styles.welcomeText}>
+                                        Uporabnik: {fullName}
+                                    </Text>
+                                    <View style={{ paddingRight: 10 }}>
+                                        <Text style={styles.welcomeText}>
+                                            Vloga: {vloga}
+                                        </Text>
+                                    </View>
+                                </View>
+
+
+                            ),
+                        };
+                    }}
                 />
                 <Stack.Screen
                     name="createOprema"
                     component={CreateOpremaScreen}
-                    options={{ title: "Nova oprema" }}
+                    options={({ route }) => {
+                        // Safely extract the user parameters
+                        const user = (route.params as any)?.user || {};
+                        const firstName = user.ime || '';
+                        const lastName = user.priimek || '';
+                        const vloga=user.vloga || '';
+                        const fullName = `${firstName} ${lastName}`.trim();
+
+                        return {
+                            title: "Nova oprema", // Keeps the title on the left (or center on iOS)
+                            headerRight: () => (
+                                <View style={{ paddingRight: 10 }}>
+                                    <Text style={styles.welcomeText}>
+                                        Uporabnik: {fullName}
+                                    </Text>
+                                    <View style={{ paddingRight: 10 }}>
+                                        <Text style={styles.welcomeText}>
+                                            Vloga: {vloga}
+                                        </Text>
+                                    </View>
+                                </View>
+
+
+                            ),
+                        };
+                    }}
                 />
             </Stack.Navigator>
         </NavigationContainer>
